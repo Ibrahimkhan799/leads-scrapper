@@ -53,7 +53,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            Website-development prospects across every local business category.
+            Seeded rows are demo data. Generate leads pulls live OpenStreetMap businesses — free, no API key.
           </p>
         </div>
         <Link href="/generate" className="text-sm text-primary hover:underline">

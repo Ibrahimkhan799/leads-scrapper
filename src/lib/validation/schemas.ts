@@ -12,11 +12,12 @@ export const discoverSchema = z.object({
   maxLeads: z.number().int().min(1).max(500).default(50),
   sources: z
     .object({
-      googleMaps: z.boolean().default(true),
+      openStreetMap: z.boolean().default(true),
+      googleMaps: z.boolean().default(false),
       search: z.boolean().default(true),
       directory: z.boolean().default(false),
     })
-    .default({ googleMaps: true, search: true, directory: false }),
+    .default({ openStreetMap: true, googleMaps: false, search: true, directory: false }),
   enrichment: z
     .object({
       website: z.boolean().default(true),

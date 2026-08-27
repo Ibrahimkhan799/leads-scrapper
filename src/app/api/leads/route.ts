@@ -7,7 +7,7 @@ import { enforceRateLimit, handleError } from "@/lib/api/http";
 export async function GET(request: NextRequest) {
   try {
     const limited = enforceRateLimit(request);
-    if (limited instanceof NextResponse) return limited;
+    if (limited) return limited;
 
     const parsed = leadsQuerySchema.parse(Object.fromEntries(request.nextUrl.searchParams));
     const page = Math.max(1, Number(parsed.page ?? 1));

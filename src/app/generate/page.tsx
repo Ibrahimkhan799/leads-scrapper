@@ -25,8 +25,13 @@ export default function GeneratePage() {
   const [area, setArea] = React.useState("");
   const [keyword, setKeyword] = React.useState("");
   const [keywords, setKeywords] = React.useState<string[]>([]);
-  const [maxLeads, setMaxLeads] = React.useState(50);
-  const [sources, setSources] = React.useState({ googleMaps: true, search: true, directory: false });
+  const [maxLeads, setMaxLeads] = React.useState(20);
+  const [sources, setSources] = React.useState({
+    openStreetMap: true,
+    googleMaps: false,
+    search: true,
+    directory: false,
+  });
   const [enrichment, setEnrichment] = React.useState({
     website: true,
     social: true,
@@ -75,7 +80,8 @@ export default function GeneratePage() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Generate leads</h1>
         <p className="text-sm text-muted-foreground">
-          Enter any local business category. The same pipeline discovers, enriches, and scores every lead.
+          Completely free: OpenStreetMap + DuckDuckGo. No API key. Enter any local business category and city, then
+          start with 10–20 leads.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -189,8 +195,9 @@ export default function GeneratePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <fieldset className="space-y-2">
                 <Label>Discovery sources</Label>
-                <Check label="Google Maps" checked={sources.googleMaps} onChange={(v) => setSources({ ...sources, googleMaps: v })} />
-                <Check label="Search" checked={sources.search} onChange={(v) => setSources({ ...sources, search: v })} />
+                <Check label="OpenStreetMap (free)" checked={sources.openStreetMap} onChange={(v) => setSources({ ...sources, openStreetMap: v })} />
+                <Check label="Google Places (paid, optional)" checked={sources.googleMaps} onChange={(v) => setSources({ ...sources, googleMaps: v })} />
+                <Check label="Web search for official sites (free)" checked={sources.search} onChange={(v) => setSources({ ...sources, search: v })} />
                 <Check label="Directory" checked={sources.directory} onChange={(v) => setSources({ ...sources, directory: v })} />
               </fieldset>
               <fieldset className="space-y-2">

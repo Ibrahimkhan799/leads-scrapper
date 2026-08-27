@@ -5,7 +5,7 @@ import { handleError } from "@/lib/api/http";
 
 const settingsSchema = z.object({
   discovery: z.object({
-    provider: z.enum(["mock", "google-places", "auto"]),
+    provider: z.enum(["mock", "google-places", "openstreetmap", "auto"]),
     maxResults: z.number().int().min(1).max(500),
     queryExpansion: z.boolean(),
     maxQueries: z.number().int().min(1).max(20),
