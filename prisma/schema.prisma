@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadCategory {
+  HOT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ContactStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  FOLLOW_UP
+  INTERESTED
+  NOT_INTERESTED
+  CLIENT
+  CLOSED
+  DO_NOT_CONTACT
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum JobType {
+  DISCOVERY
+  DEDUPLICATION
+  WEBSITE_DISCOVERY
+  WEBSITE_CRAWL
+  CONTACT_EXTRACTION
+  SOCIAL_DISCOVERY
+  WEBSITE_ANALYSIS
+  AI_ANALYSIS
+  LEAD_SCORING
+  ENRICHMENT_PIPELINE
+}
+
+enum WebsiteQuality {
+  NONE
+  POOR
+  OUTDATED
+  GOOD
+  EXCELLENT
+}
+
+enum WebsiteOpportunity {
+  VERY_HIGH
+  HIGH
+  MEDIUM
+  LOW
+  VERY_LOW
+}
+
+enum CrawlStatus {
+  PENDING
+  SUCCESS
+  BLOCKED
+  TIMEOUT
+  UNAVAILABLE
+  ERROR
+  SKIPPED
+}
+
+model Business {
+  id             String @id @default(cuid())
+  name           String
+  normalizedName String
+  businessType   String
+  category       String?
+  subcategory    String?
+
+  country     String?
+  countryCode String?
+  state       String?
+  city        String?
+  area        String?
+  address     String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+
+  googlePlaceId String? @unique
+  googleMapsUrl String?
+
+  phone          String?
+  email          String?
+  whatsapp       String?
+  websiteUrl     String?
+  websiteDomain  String?
+  instagram      String?
+  facebook       String?
+  tiktok         String?
+  youtube        String?
+  linkedin       String?
+  twitter        String?
+  bookingUrl     String?
+  bookingProvider String?
+
+  rating      Float?
+  reviewCount Int?
+  openingHours Json?
+
+  websiteStatus      String?
+  websiteQuality     WebsiteQuality?
+  websiteOpportunity WebsiteOpportunity?
+  crawlStatus        CrawlStatus?
+
+  leadScore    Int           @default(0)
+  leadCategory LeadCategory  @default(LOW)
+  contactStatus ContactStatus @default(NEW)
+  notes        String?
+  followUpAt   DateTime?
+
+  possibleDuplicate Boolean @default(false)
+  duplicateOfId     String?
+
+  lastDiscoveredAt   DateTime?
+  lastEnrichedAt     DateTime?
+  lastWebsiteAuditAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts         BusinessContact[]
+  socialProfiles   SocialProfile[]
+  websites         Website[]
+  bookingPlatforms BookingPlatform[]
+  scores           LeadScore[]
+  activities       LeadActivity[]
+  tags             BusinessTag[]
+  discoverySources DiscoverySource[]
+  aiAnalyses       AIAnalysis[]
+  signals          BusinessSignal[]
+
+  @@index([name])
+  @@index([normalizedName])
+  @@index([businessType])
+  @@index([country])
+  @@index([city])
+  @@index([phone])
+  @@index([email])
+  @@index([websiteUrl])
+  @@index([websiteDomain])
+  @@index([leadScore])
+  @@index([leadCategory])
+  @@index([contactStatus])
+  @@index([createdAt])
+  @@index([possibleDuplicate])
+}
+
+model BusinessContact {
+  id              String    @id @default(cuid())
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type            String
+  value           String
+  normalizedValue String
+  source          String?
+  sourceUrl       String?
+  confidence      Float     @default(0.5)
+  lastVerifiedAt  DateTime?
+  isPrimary       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([businessId, type, normalizedValue])
+  @@index([type, normalizedValue])
+}
+
+model SocialProfile {
+  id             String    @id @default(cuid())
+  businessId     String
+  business       Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform       String
+  url            String
+  handle         String?
+  source         String?
+  sourceUrl      String?
+  confidence     Float     @default(0.5)
+  lastVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([businessId, platform, url])
+  @@index([platform])
+}
+
+model Website {
+  id                      String      @id @default(cuid())
+  businessId              String
+  business                Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url                     String
+  domain                  String
+  isVerified              Boolean     @default(false)
+  verificationConfidence  Float       @default(0)
+  discoveredVia           String?
+  crawlStatus             CrawlStatus @default(PENDING)
+  lastCrawledAt           DateTime?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  pages  WebsitePage[]
+  audits WebsiteAudit[]
+
+  @@index([domain])
+  @@index([businessId])
+}
+
+model WebsitePage {
+  id             String   @id @default(cuid())
+  websiteId      String
+  website        Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  url            String
+  path           String
+  title          String?
+  httpStatus     Int?
+  loadTimeMs     Int?
+  extractedEmails Json?
+  extractedPhones Json?
+  createdAt      DateTime @default(now())
+
+  @@unique([websiteId, url])
+}
+
+model WebsiteAudit {
+  id                   String          @id @default(cuid())
+  websiteId            String
+  website              Website         @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  https                Boolean         @default(false)
+  mobileViewport       Boolean         @default(false)
+  httpStatus           Int?
+  loadTimeMs           Int?
+  brokenLinkCount      Int             @default(0)
+  hasClearCta          Boolean         @default(false)
+  hasContactCta        Boolean         @default(false)
+  hasBookingCta        Boolean         @default(false)
+  hasMobileNav         Boolean         @default(false)
+  visiblePhone         Boolean         @default(false)
+  visibleEmail         Boolean         @default(false)
+  hasServices          Boolean         @default(false)
+  hasPricing           Boolean         @default(false)
+  hasLocation          Boolean         @default(false)
+  hasOpeningHours      Boolean         @default(false)
+  hasAbout             Boolean         @default(false)
+  hasTestimonials      Boolean         @default(false)
+  hasContactPage       Boolean         @default(false)
+  performanceScore     Int?
+  accessibilityScore   Int?
+  seoScore             Int?
+  bestPracticesScore   Int?
+  quality              WebsiteQuality?
+  opportunity          WebsiteOpportunity?
+  raw                  Json?
+  createdAt            DateTime        @default(now())
+
+  @@index([websiteId, createdAt])
+}
+
+model BookingPlatform {
+  id            String   @id @default(cuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider      String
+  url           String
+  detectedFrom  String?
+  createdAt     DateTime @default(now())
+
+  @@unique([businessId, provider, url])
+}
+
+model LeadScore {
+  id         String        @id @default(cuid())
+  businessId String
+  business   Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  score      Int
+  category   LeadCategory
+  profile    String        @default("website-development")
+  reasons    Json
+  createdAt  DateTime      @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+model LeadActivity {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type       String
+  message    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+model Tag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  color     String        @default("#64748b")
+  createdAt DateTime      @default(now())
+  businesses BusinessTag[]
+}
+
+model BusinessTag {
+  businessId String
+  tagId      String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([businessId, tagId])
+}
+
+model ScrapingJob {
+  id          String    @id @default(cuid())
+  type        JobType
+  status      JobStatus @default(QUEUED)
+  progress    Int       @default(0)
+  total       Int       @default(0)
+  processed   Int       @default(0)
+  failed      Int       @default(0)
+  input       Json
+  result      Json?
+  error       String?
+  parentJobId String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  logs ScrapingJobLog[]
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([parentJobId])
+}
+
+model ScrapingJobLog {
+  id        String      @id @default(cuid())
+  jobId     String
+  job       ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  level     String      @default("info")
+  message   String
+  meta      Json?
+  createdAt DateTime    @default(now())
+
+  @@index([jobId, createdAt])
+}
+
+model DiscoverySource {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  provider     String
+  sourceId     String?
+  rawPayload   Json?
+  query        String?
+  discoveredAt DateTime @default(now())
+
+  @@index([provider, sourceId])
+}
+
+model SearchQuery {
+  id          String   @id @default(cuid())
+  jobId       String
+  query       String
+  provider    String
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([jobId])
+}
+
+model AIAnalysis {
+  id                             String   @id @default(cuid())
+  businessId                     String
+  business                       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  classification                 String?
+  websiteQualityInterpretation   String?
+  opportunity                    String?
+  websiteWeaknessSummary         String?
+  salesInsight                   Json?
+  raw                            Json?
+  model                          String?
+  createdAt                      DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+model BusinessSignal {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  key        String
+  value      Json
+  source     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([businessId, key])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  name      String
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SearchTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  config      Json
+  createdAt   DateTime @default(now())
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
