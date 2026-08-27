@@ -5,7 +5,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().default("redis://127.0.0.1:6379"),
   APP_SECRET: z.string().min(8).default("dev-secret-change-in-production-leadintel-2026"),
   USE_MOCK_PROVIDERS: z.string().default("false"),
-  INLINE_JOBS: z.string().default("false"),
+  INLINE_JOBS: z.string().default("true"),
   GOOGLE_PLACES_API_KEY: z.string().optional().default(""),
   SEARCH_API_KEY: z.string().optional().default(""),
   SEARCH_API_URL: z.string().optional().default(""),
@@ -60,4 +60,16 @@ export function mockProvidersEnabled(): boolean {
 export function isTruthy(value: string | undefined): boolean {
   if (!value) return false;
   return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
+export function isFalsy(value: string | undefined): boolean {
+  if (!value) return false;
+  return ["0", "false", "no", "off"].includes(value.toLowerCase());
+}
+
+/** Jobs run in the Next.js process. Default on so first-time setup does not need a working Redis worker. */
+export function inlineJobsEnabled(): boolean {
+  if (isFalsy(process.env.INLINE_JOBS)) return false;
+  if (isTruthy(process.env.INLINE_JOBS)) return true;
+  return true;
 }

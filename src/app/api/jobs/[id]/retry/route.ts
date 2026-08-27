@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { enqueue, QUEUE_NAMES } from "@/lib/queues";
-import { processDiscoveryJob, processEnrichmentJob } from "@/lib/pipeline/run";
+import { dispatchDiscovery, dispatchEnrichment } from "@/lib/jobs/dispatch";
 import { handleError, jsonError } from "@/lib/api/http";
-import { isTruthy } from "@/lib/env";
 import type { DiscoverInput } from "@/lib/validation/schemas";
 
 export async function POST(
@@ -23,13 +21,11 @@ export async function POST(
 
     if (job.type === "DISCOVERY") {
       const input = job.input as DiscoverInput;
-      if (isTruthy(process.env.INLINE_JOBS)) void processDiscoveryJob(job.id, input);
-      else await enqueue(QUEUE_NAMES.discovery, { jobId: job.id, input });
+      await dispatchDiscovery(job.id, input);
     } else {
-      const payload = job.input as { businessIds?: string[] };
-      const ids = payload.businessIds ?? [];
-      if (isTruthy(process.env.INLINE_JOBS)) void processEnrichmentJob(job.id, ids);
-      else await enqueue(QUEUE_NAMES.enrichment, { jobId: job.id, businessIds: ids });
+      const payload = job.input as { businessIds?: string[]; ids?: string[]; ai?: boolean };
+      const ids = payload.businessIds ?? payload.ids ?? [];
+      await dispatchEnrichment(job.id, ids, Boolean(payload.ai));
     }
 
     return NextResponse.json({ ok: true, failedOnly });

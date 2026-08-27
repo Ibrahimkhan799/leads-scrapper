@@ -17,13 +17,41 @@ export const QUEUE_NAMES = {
 let connection: IORedis | null = null;
 const queues = new Map<string, Queue>();
 
+function redisUrl() {
+  return process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+}
+
 export function getRedis(): IORedis {
   if (!connection) {
-    connection = new IORedis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
+    connection = new IORedis(redisUrl(), {
       maxRetriesPerRequest: null,
+      lazyConnect: true,
     });
   }
   return connection;
+}
+
+export async function redisReady(timeoutMs = 1500): Promise<boolean> {
+  const probe = new IORedis(redisUrl(), {
+    maxRetriesPerRequest: 1,
+    connectTimeout: timeoutMs,
+    lazyConnect: true,
+    enableOfflineQueue: false,
+    retryStrategy: () => null,
+  });
+  try {
+    const result = await Promise.race([
+      probe.connect().then(() => probe.ping()),
+      new Promise<string>((_, reject) => {
+        setTimeout(() => reject(new Error("redis probe timeout")), timeoutMs);
+      }),
+    ]);
+    return result === "PONG";
+  } catch {
+    return false;
+  } finally {
+    probe.disconnect();
+  }
 }
 
 export function getQueue(name: string): Queue {
