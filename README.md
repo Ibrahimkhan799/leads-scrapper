@@ -11,7 +11,7 @@ This is a **completely free** local app by default. Discovery uses [OpenStreetMa
 | Tool | Why |
 | --- | --- |
 | **Node.js 20+** | Runs the app ([nodejs.org](https://nodejs.org)) |
-| **Docker Desktop** | Runs Postgres (and optional Redis) |
+| **Docker Desktop** *or* local Postgres | Database. Docker is the easy path (`docker compose up -d`). Redis is optional. |
 | **Git** | Clone the repo |
 
 You do **not** need:
@@ -42,7 +42,7 @@ Then open **[http://localhost:3000](http://localhost:3000)**.
 4. Create database tables
 5. Seed demo leads so the dashboard is not empty
 
-If Docker is not running, start Docker Desktop and run `npm run setup` again.
+If Postgres is not already on port 5432, start Docker Desktop and run `npm run setup` again. You can also point `DATABASE_URL` at any local Postgres and re-run setup.
 
 ### Manual install (same result)
 

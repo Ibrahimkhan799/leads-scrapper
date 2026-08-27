@@ -38,26 +38,33 @@ function commandExists(command) {
   return result.status === 0;
 }
 
+function portOpen(host, port, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const socket = net.connect({ host, port });
+    socket.setTimeout(timeoutMs);
+    socket.on("connect", () => {
+      socket.end();
+      resolve(true);
+    });
+    socket.on("timeout", () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.on("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
+
 function waitForPort(host, port, timeoutMs = 120_000) {
   const started = Date.now();
   return new Promise((resolve, reject) => {
-    const attempt = () => {
-      const socket = net.connect({ host, port });
-      socket.setTimeout(2000);
-      socket.on("connect", () => {
-        socket.end();
+    const attempt = async () => {
+      if (await portOpen(host, port, 2000)) {
         resolve();
-      });
-      socket.on("timeout", () => {
-        socket.destroy();
-        retry();
-      });
-      socket.on("error", () => {
-        socket.destroy();
-        retry();
-      });
-    };
-    const retry = () => {
+        return;
+      }
       if (Date.now() - started > timeoutMs) {
         reject(new Error(`Timed out waiting for ${host}:${port}`));
         return;
@@ -73,16 +80,6 @@ if (major < 20) {
   fail(`Node.js 20+ is required (found ${process.version}). Install from https://nodejs.org`);
 }
 
-log("Checking Docker");
-if (!commandExists("docker")) {
-  fail("Docker is required for Postgres. Install Docker Desktop, then re-run: npm run setup");
-}
-
-const compose = spawnSync("docker", ["compose", "version"], { stdio: "ignore" });
-if (compose.status !== 0) {
-  fail("Docker Compose is required (`docker compose`). Update Docker Desktop and retry.");
-}
-
 if (!existsSync(".env")) {
   log("Creating .env from .env.example (no API keys needed)");
   copyFileSync(".env.example", ".env");
@@ -90,14 +87,26 @@ if (!existsSync(".env")) {
   log(".env already exists — leaving it unchanged");
 }
 
-log("Starting Postgres + Redis with Docker (first image pull can take a few minutes)");
-run("docker", ["compose", "up", "-d"]);
-
-log("Waiting for Postgres on localhost:5432");
-try {
-  await waitForPort("127.0.0.1", 5432);
-} catch (error) {
-  fail(error instanceof Error ? error.message : "Postgres did not become ready");
+const postgresUp = await portOpen("127.0.0.1", 5432);
+if (postgresUp) {
+  log("Postgres already running on localhost:5432 — skipping Docker");
+} else if (commandExists("docker")) {
+  const compose = spawnSync("docker", ["compose", "version"], { stdio: "ignore" });
+  if (compose.status !== 0) {
+    fail("Docker Compose is required (`docker compose`). Update Docker Desktop and retry.");
+  }
+  log("Starting Postgres + Redis with Docker (first image pull can take a few minutes)");
+  run("docker", ["compose", "up", "-d"]);
+  log("Waiting for Postgres on localhost:5432");
+  try {
+    await waitForPort("127.0.0.1", 5432);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : "Postgres did not become ready");
+  }
+} else {
+  fail(
+    "Postgres is not running on localhost:5432 and Docker was not found. Install Docker Desktop (recommended) or start Postgres with user/password/db `leadintel`, then re-run: npm run setup"
+  );
 }
 
 log("Installing npm packages");
