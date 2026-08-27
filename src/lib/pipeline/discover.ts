@@ -2,36 +2,51 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { MockDiscoveryProvider } from "@/lib/providers/discovery/mock";
 import { GooglePlacesDiscoveryProvider } from "@/lib/providers/discovery/google-places";
+import { OpenStreetMapDiscoveryProvider } from "@/lib/providers/discovery/openstreetmap";
 import { MockSearchProvider } from "@/lib/providers/search/mock";
 import { HttpSearchProvider } from "@/lib/providers/search/http";
+import { DuckDuckGoSearchProvider } from "@/lib/providers/search/duckduckgo";
 import { SearchWebsiteDiscoveryProvider, WEBSITE_VERIFY_THRESHOLD } from "@/lib/providers/website-discovery";
 import type { BusinessDiscoveryProvider, RawBusiness } from "@/lib/providers/types";
 import { generateSearchQueries } from "@/lib/discovery/query-generator";
 import { normalizeRawBusiness } from "@/lib/discovery/normalize";
 import { deduplicateBusinesses } from "@/lib/discovery/deduplicate";
 import { mockProvidersEnabled } from "@/lib/env";
-import { getSettings } from "@/lib/settings";
+import { getSettings, type AppSettings } from "@/lib/settings";
 import type { DiscoverInput } from "@/lib/validation/schemas";
 import { logJob } from "@/lib/jobs/service";
 
-export function getDiscoveryProviders(sources: DiscoverInput["sources"]): BusinessDiscoveryProvider[] {
-  const providers: BusinessDiscoveryProvider[] = [];
-  const mock = mockProvidersEnabled();
-  const google = new GooglePlacesDiscoveryProvider();
-
-  if (mock || !google.enabled()) {
-    providers.push(new MockDiscoveryProvider());
-    return providers;
+export function getDiscoveryProviders(
+  sources: DiscoverInput["sources"],
+  settings?: AppSettings
+): BusinessDiscoveryProvider[] {
+  if (mockProvidersEnabled() || settings?.discovery.provider === "mock") {
+    return [new MockDiscoveryProvider()];
   }
 
+  const google = new GooglePlacesDiscoveryProvider();
+  const osm = new OpenStreetMapDiscoveryProvider();
+  const providers: BusinessDiscoveryProvider[] = [];
+
+  if (settings?.discovery.provider === "google-places") {
+    if (google.enabled()) return [google];
+    return [osm];
+  }
+
+  if (settings?.discovery.provider === "openstreetmap" || sources.openStreetMap !== false) {
+    providers.push(osm);
+  }
   if (sources.googleMaps && google.enabled()) providers.push(google);
-  if (!providers.length) providers.push(new MockDiscoveryProvider());
+  if (sources.directory && !providers.some((item) => item.id === "openstreetmap")) {
+    providers.push(osm);
+  }
+  if (!providers.length) providers.push(osm);
   return providers;
 }
 
 export async function runDiscovery(jobId: string, input: DiscoverInput) {
   const settings = await getSettings();
-  const providers = getDiscoveryProviders(input.sources);
+  const providers = getDiscoveryProviders(input.sources, settings);
   const queries = settings.discovery.queryExpansion
     ? generateSearchQueries(input, { maxQueries: settings.discovery.maxQueries })
     : [[input.businessType, input.city, input.country].filter(Boolean).join(" ")];
@@ -68,7 +83,13 @@ export async function runDiscovery(jobId: string, input: DiscoverInput) {
   let uncertain = 0;
 
   for (const business of limited) {
-    const existing = await findExisting(business.googlePlaceId, business.normalizedPhone, business.websiteDomain);
+    const existing = await findExisting(
+      business.googlePlaceId,
+      business.normalizedPhone,
+      business.websiteDomain,
+      business.source,
+      business.sourceId
+    );
     if (existing) {
       createdIds.push(existing.id);
       continue;
@@ -154,11 +175,23 @@ export async function runDiscovery(jobId: string, input: DiscoverInput) {
 async function findExisting(
   googlePlaceId?: string,
   phone?: string | null,
-  domain?: string | null
+  domain?: string | null,
+  provider?: string,
+  sourceId?: string
 ) {
   if (googlePlaceId) {
     const match = await prisma.business.findUnique({ where: { googlePlaceId } });
     if (match) return match;
+  }
+  if (provider && sourceId) {
+    const source = await prisma.discoverySource.findFirst({
+      where: { provider, sourceId },
+      select: { businessId: true },
+    });
+    if (source) {
+      const match = await prisma.business.findUnique({ where: { id: source.businessId } });
+      if (match) return match;
+    }
   }
   if (phone) {
     const match = await prisma.business.findFirst({ where: { phone } });
@@ -173,7 +206,8 @@ async function findExisting(
 
 export function getSearchProvider() {
   const http = new HttpSearchProvider();
-  if (http.enabled() && !mockProvidersEnabled()) return http;
+  if (http.enabled()) return http;
+  if (!mockProvidersEnabled()) return new DuckDuckGoSearchProvider();
   return new MockSearchProvider();
 }
 

@@ -14,10 +14,10 @@ export function handleError(error: unknown) {
   return jsonError(error instanceof Error ? error.message : "Unexpected error", 500);
 }
 
-export function enforceRateLimit(request: Request, limit = 90) {
-  const { ok, remaining } = rateLimit(clientIp(request), limit);
+export function enforceRateLimit(request: Request, limit = 90): NextResponse | null {
+  const { ok } = rateLimit(clientIp(request), limit);
   if (!ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "x-ratelimit-remaining": "0" } });
   }
-  return remaining;
+  return null;
 }

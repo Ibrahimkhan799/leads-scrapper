@@ -3,7 +3,7 @@ import { DEFAULT_SCORING_PROFILE, type ScoringProfile } from "@/lib/scoring/rule
 
 export interface AppSettings {
   discovery: {
-    provider: "mock" | "google-places" | "auto";
+    provider: "mock" | "google-places" | "openstreetmap" | "auto";
     maxResults: number;
     queryExpansion: boolean;
     maxQueries: number;

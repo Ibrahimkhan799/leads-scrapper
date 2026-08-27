@@ -4,7 +4,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().default("redis://127.0.0.1:6379"),
   APP_SECRET: z.string().min(8).default("dev-secret-change-in-production-leadintel-2026"),
-  USE_MOCK_PROVIDERS: z.string().default("true"),
+  USE_MOCK_PROVIDERS: z.string().default("false"),
   INLINE_JOBS: z.string().default("false"),
   GOOGLE_PLACES_API_KEY: z.string().optional().default(""),
   SEARCH_API_KEY: z.string().optional().default(""),
@@ -53,9 +53,8 @@ export function getEnv(): AppEnv {
 }
 
 export function mockProvidersEnabled(): boolean {
-  const flag = (process.env.USE_MOCK_PROVIDERS ?? "true").toLowerCase();
-  if (flag === "false" || flag === "0") return false;
-  return true;
+  const flag = (process.env.USE_MOCK_PROVIDERS ?? "false").toLowerCase();
+  return ["1", "true", "yes", "on"].includes(flag);
 }
 
 export function isTruthy(value: string | undefined): boolean {

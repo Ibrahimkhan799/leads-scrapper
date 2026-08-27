@@ -37,9 +37,10 @@ export default function SettingsPage() {
         <CardContent className="grid gap-3 md:grid-cols-2">
           <label className="text-xs">Provider
             <select className="mt-1 h-8 w-full rounded-md border border-input bg-card px-2" value={settings.discovery.provider} onChange={(e) => setDraft(JSON.stringify({ ...settings, discovery: { ...settings.discovery, provider: e.target.value } }))}>
-              <option value="auto">Auto</option>
+              <option value="auto">Auto (OpenStreetMap, free)</option>
+              <option value="openstreetmap">OpenStreetMap (free)</option>
               <option value="mock">Mock</option>
-              <option value="google-places">Google Places</option>
+              <option value="google-places">Google Places (paid)</option>
             </select>
           </label>
           <label className="text-xs">Max results

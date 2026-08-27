@@ -25,7 +25,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-`USE_MOCK_PROVIDERS=true` (default) runs the full product without paid APIs.
+`USE_MOCK_PROVIDERS=false` (default) discovers **real businesses from OpenStreetMap**. That is free public map data and does not need a Google key.
+
+Google Places is optional and paid. Leave it unset.
 
 ## Workflow
 
@@ -38,11 +40,15 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Discovery is provider-agnostic:
 
-- Mock (always available)
-- Google Places (`GOOGLE_PLACES_API_KEY`)
+- **OpenStreetMap / Overpass** (default, free, no API key)
+- Mock (`USE_MOCK_PROVIDERS=true`)
+- Google Places (`GOOGLE_PLACES_API_KEY`, paid)
+- DuckDuckGo HTML search for official websites (free)
 - HTTP search API (`SEARCH_API_URL` + `SEARCH_API_KEY`)
 - Website crawler (Cheerio, Playwright if `PLAYWRIGHT_ENABLED=true`)
 - AI (optional OpenAI; mock fallback)
+
+OpenStreetMap coverage varies by city. Listings include name, coordinates, and often phone/website/hours. Google-style ratings and review counts are usually not in OSM.
 
 Add another discovery source by implementing `BusinessDiscoveryProvider`.
 

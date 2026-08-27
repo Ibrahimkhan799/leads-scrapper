@@ -8,9 +8,8 @@ import { isTruthy } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   try {
-    if (enforceRateLimit(request, 20) instanceof NextResponse) {
-      return enforceRateLimit(request, 20);
-    }
+    const limited = enforceRateLimit(request, 20);
+    if (limited) return limited;
     const body = await request.json();
     const input = discoverSchema.parse(body);
     const job = await createJob("DISCOVERY", input);
