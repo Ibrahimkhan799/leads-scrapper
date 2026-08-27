@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f4ef;
+  --foreground: #171512;
+  --card: #fffcf7;
+  --card-foreground: #171512;
+  --popover: #fffcf7;
+  --popover-foreground: #171512;
+  --primary: #0f766e;
+  --primary-foreground: #f4faf9;
+  --secondary: #ece7dd;
+  --secondary-foreground: #2a261f;
+  --muted: #efeae1;
+  --muted-foreground: #6b6458;
+  --accent: #e4f3f0;
+  --accent-foreground: #115e59;
+  --destructive: #b42318;
+  --border: #e4ddd0;
+  --input: #e4ddd0;
+  --ring: #0f766e;
+  --radius: 0.7rem;
+  --sidebar: #f3efe6;
+  --sidebar-foreground: #1c1915;
+}
+
+.dark {
+  --background: #0f1110;
+  --foreground: #ece8e1;
+  --card: #161917;
+  --card-foreground: #ece8e1;
+  --popover: #161917;
+  --popover-foreground: #ece8e1;
+  --primary: #2dd4bf;
+  --primary-foreground: #042f2e;
+  --secondary: #1e2321;
+  --secondary-foreground: #e7e2d9;
+  --muted: #1a1e1c;
+  --muted-foreground: #9c968b;
+  --accent: #132422;
+  --accent-foreground: #99f6e4;
+  --destructive: #f87171;
+  --border: #2a2f2c;
+  --input: #2a2f2c;
+  --ring: #2dd4bf;
+  --sidebar: #121514;
+  --sidebar-foreground: #ece8e1;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01" on, "cv11" on;
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
